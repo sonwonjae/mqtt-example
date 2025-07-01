@@ -1,0 +1,8 @@
+{
+  "name": "mosquitto",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "docker build -t dev-mosquitto . && docker run --rm --name dev-mosquitto -p 1883:1883 -p 9001:9001 dev-mosquitto"
+  }
+}
