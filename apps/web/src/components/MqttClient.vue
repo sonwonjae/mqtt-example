@@ -64,6 +64,9 @@ export default {
       this.receivedMessages.push(`${this.clientId}: 이동 시작`);
       this.isMoving = true;
       setTimeout(() => {
+        this.position.x = tx;
+        this.position.y = ty;
+        this.position.z = tz;
         this.receivedMessages.push(`${this.clientId}: 이동 완료`);
         this.client.publish('control-tower-logs', `${this.clientId}: 이동 완료`);
         this.isMoving = false;
