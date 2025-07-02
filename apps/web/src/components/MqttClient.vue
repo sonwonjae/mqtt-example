@@ -1,51 +1,87 @@
 <template>
   <div>
     <h3>{{ clientId }}</h3>
-    <input v-model="message" placeholder="메시지 입력" />
-    <button @click="sendMessage">보내기</button>
     <div v-for="(msg, i) in receivedMessages" :key="i">📩 {{ msg }}</div>
   </div>
 </template>
 
-<script setup>
-import { ref, onMounted, onUnmounted } from 'vue';
+<script>
 import mqtt from 'mqtt';
 
-const props = defineProps({
-  clientId: String,
-  topic: {
-    type: String,
-    default: 'test/topic',
+export default {
+  name: 'MqttClient',
+
+  props: {
+    clientId: {
+      type: String,
+      required: true,
+    },
+    topic: {
+      type: String,
+      default: 'test/topic',
+    },
   },
-});
 
-const client = ref(null);
-const message = ref('');
-const receivedMessages = ref([]);
+  data() {
+    return {
+      isMoving: false,
+      client: null,
+      position: {
+        x: 0,
+        y: 0,
+        z: 0,
+      },
+      receivedMessages: [],
+    };
+  },
 
-onMounted(() => {
-  client.value = mqtt.connect('ws://localhost:9001', {
-    clientId: props.clientId,
-  });
+  methods: {
+    connect() {
+      this.client = mqtt.connect('ws://localhost:9001', {
+        clientId: this.clientId,
+      });
+    },
+    subscribe() {
+      this.client.on('connect', () => {
+        console.log(`${this.clientId} connected`);
+        this.client.subscribe(this.clientId);
+      });
+      this.client.on('message', this.move);
+    },
+    move(topic, position) {
+      if (topic !== this.clientId) {
+        return;
+      }
+      const [tx, ty, tz] = position.toString().split(':').map(Number);
+      if (this.position.x === tx && this.position.y === ty && this.position.z === tz) {
+        this.receivedMessages.push(`${this.clientId}: 이미 지정된 위치에 존재합니다.`);
+        return;
+      }
+      if (this.isMoving) {
+        this.receivedMessages.push(`${this.clientId}: 현재 이동 중입니다.`);
+        return;
+      }
+      this.receivedMessages.push(`${this.clientId}: 이동 시작`);
+      this.isMoving = true;
+      setTimeout(() => {
+        this.receivedMessages.push(`${this.clientId}: 이동 완료`);
+        this.client.publish('control-tower-logs', `${this.clientId}: 이동 완료`);
+        this.isMoving = false;
+      }, 500)
+    }
+  },
 
-  client.value.on('connect', () => {
-    console.log(`${props.clientId} connected`);
-    client.value.subscribe(props.topic);
-  });
+  mounted() {
+    this.connect();
+    this.subscribe();
+  },
 
-  client.value.on('message', (topic, payload) => {
-    receivedMessages.value.push(`${topic}: ${payload.toString()}`);
-  });
-});
-
-onUnmounted(() => {
-  client.value?.end();
-});
-
-function sendMessage() {
-  client.value.publish(props.topic, `${props.clientId}: ${message.value}`);
-  message.value = '';
-}
+  beforeUnmount() {
+    if (this.client) {
+      this.client.end();
+    }
+  },
+};
 </script>
 
 <style scoped>

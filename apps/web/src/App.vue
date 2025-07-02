@@ -1,23 +1,34 @@
-<script>
+<template>
+  <h1>MQTT Example</h1>
+  <br />
+  <MqttControlTower />
+  <br />
+  <hr />
+  <br />
+  <h2>MQTT Clients</h2>
+  <MqttClient
+    v-for="client in CLIENTS"
+    :key="client.id"
+    :client-id="client.id"
+  />
+</template>
+
+<script lang="ts">
+import MqttControlTower from './components/MqttControlTower.vue';
 import MqttClient from './components/MqttClient.vue';
 
+import { CLIENTS } from './constants';
+
 export default {
-  name: 'MqttExample',
+  name: 'MainApp',
   components: {
-    MqttClient
+    MqttControlTower,
+    MqttClient,
   },
   data() {
     return {
-      clientIds: ['client-1', 'client-2', 'client-3']
+      CLIENTS,
     };
   }
 };
 </script>
-
-<template>
-  <h1>MQTT Example</h1>
-  <h2>MQTT Broker</h2>
-  <div>broker</div>
-  <h2>MQTT Clients</h2>
-  <MqttClient v-for="id in clientIds" :key="id" :client-id="id" />
-</template>
